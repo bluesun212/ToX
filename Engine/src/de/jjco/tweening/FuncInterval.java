@@ -10,19 +10,16 @@ import de.jjco.EngineLog;
  * of doubles that describes a tweening function over a certain time.
  * 
  * @author Jared Jonas (bluesun212)
- * @version Revision 1
+ * @version Revision 2 J
  */
-public class FuncInterval {
+public class FuncInterval extends Interval {
 	private Object obj;
+	private String method;
+
 	private Method meth;
 	private double s;
 	private double e;
-	private long dur;
-	private long start;
-	private int t1;
-	private int t2;
-	private boolean done = false;
-	
+
 	/**
 	 * Creates a Function Interval object that updates the function with a continual stream
 	 * of doubles that describes a tweening function over a certain time. The method in the
@@ -30,7 +27,7 @@ public class FuncInterval {
 	 * argument must be a double.
 	 * 
 	 * @param target	the object that contains the function
-	 * @param method	the method you are updating
+	 * @param meth		the method you are updating
 	 * @param start		the starting value of the tween
 	 * @param end		the ending value of the tween
 	 * @param duration	the tween's duration
@@ -38,113 +35,59 @@ public class FuncInterval {
 	 * @param easing	the type of easing
 	 * @see Tween
 	 */
-	public FuncInterval(Object target, String method, double start, double end, long duration, int type, int easing) {
-		if ( target != null && method != null ) {
+	public FuncInterval(Object target, String meth, double start, double end, long duration, int type, int easing) {
+		super(duration, type, easing);
+		
+		obj = target;
+		method = meth;
+		s = start;
+		e = end;
+	}
+
+	@Override
+	protected boolean animate(double val) {
+		try {
+			meth.invoke(obj, s + ((e - s) * val));
+		} catch (IllegalAccessException e) {
+			EngineLog.logException("Could not invoke the method for " + this);
+			EngineLog.logException(e);
+		} catch (IllegalArgumentException e) {
+			EngineLog.logException("Could not invoke the method for " + this);
+			EngineLog.logException(e);
+		} catch (InvocationTargetException e) {
+			EngineLog.logException("Could not invoke the method for " + this);
+			EngineLog.logException(e);
+		}
+
+		return (val == 1);
+	}
+
+	@Override
+	protected boolean doStart() {
+		try {
+			// Get class of object
+			Class<?> clazz = obj.getClass();
+			if (obj instanceof Class<?>) {
+				clazz = (Class<?>) obj;
+			}
+
+			// Get method
+			Method m = null;
 			try {
-				// Get class of object
-				Class<?> clazz = target.getClass();
-				if (target instanceof Class<?>) {
-					clazz = (Class<?>) target;
-				}
-				
-				// Get method
-				Method m = null;
-				try {
-					m = clazz.getDeclaredMethod(method, new Class<?>[]{double.class});
-				} catch (NoSuchMethodException e) {
-					m = clazz.getMethod(method, new Class<?>[]{double.class});
-				}
-				
-				if ( m != null ) {
-					if ( !m.isAccessible() ) {
-						m.setAccessible(true);
-						EngineLog.log(target.getClass().getSimpleName() + "." + method + " is now accessible");
-					}
-					
-					obj = target;
-					meth = m;
-					dur = duration;
-					t1 = type;
-					t2 = easing;
-					s = start;
-					e = end;
-					
-					EngineLog.log("created FuncInterval for " + target.getClass().getSimpleName() + "." + method);
-				} 
+				m = clazz.getDeclaredMethod(method, new Class<?>[]{double.class});
 			} catch (NoSuchMethodException e) {
-				EngineLog.logException("Could not find the method " + target.getClass().getSimpleName() + "." + method);
-				EngineLog.logException(e);
-			} catch (SecurityException e) {
-				EngineLog.logException("Security exception trying to create a FuncInterval");
-				EngineLog.logException(e);
+				m = clazz.getMethod(method, new Class<?>[]{double.class});
 			}
-			
-		}
-	}
-	
-	/**
-	 * Returns whether the tween has been completed.
-	 * 
-	 * @return if the tween is done
-	 */
-	public boolean isDone() {
-		return ( done );
-	}
-	
-	/**
-	 * Starts the tween, optionally waiting until the tween is finished.
-	 * 
-	 * @param wait whether the method should block until completed
-	 */
-	public void start(boolean wait) {
-		EngineLog.log("Starting " + this);
-		if ( wait ) {
-			animate();
-		} else {
-			new Thread(new Runnable() {
-				public void run() {
-					animate();
+
+			if (m != null) {
+				if (!m.isAccessible()) {
+					m.setAccessible(true);
 				}
-			}).start();
-		}
-	}
-	
-	private void animate() {
-		if ( meth == null ) {
-			return;
-		}
-		
-		start = System.currentTimeMillis();
-		done = false;
-		
-		while ( !done ) {
-			long diff = Math.min(System.currentTimeMillis() - start, dur);
-			
-			try {
-				meth.invoke(obj, s + (e - s) * Tween.tween(t1, t2, diff, dur));
-			} catch (IllegalAccessException e) {
-				EngineLog.logException("Could not invoke the method for " + this);
-				EngineLog.logException(e);
-				break;
-			} catch (IllegalArgumentException e) {
-				EngineLog.logException("Could not invoke the method for " + this);
-				EngineLog.logException(e);
-				break;
-			} catch (InvocationTargetException e) {
-				EngineLog.logException("Could not invoke the method for " + this);
-				EngineLog.logException(e);
-				break;
-			}
-			
-			if ( diff == dur ) {
-				done = true;
-			} else {
-				try {
-					Thread.sleep(1);
-				} catch (InterruptedException e) {
-					EngineLog.logException(e);
-				}
-			}
-		}
+
+				meth = m;
+				return true;
+			} 
+		} catch (Exception e) {}
+		return (false);
 	}
 }

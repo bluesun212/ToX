@@ -1,9 +1,6 @@
 GENERAL
 -------
-•Beautify JavaDoc
-•Class JavaDoc footers
-•Restructure variable names, possibly using prefixes
-•Add more logging
+•?Restructure variable names, possibly using prefixes
 •Abstract rendering + implementations for GL11 and GL20
 
 AUDIO
@@ -49,7 +46,6 @@ RESOURCES
 
 TWEENING
 --------
-•Tweening operations can possibly done in batch with an object
 •Animations
 	-Timelines where events can be triggered
 	-Can be loaded from a file
