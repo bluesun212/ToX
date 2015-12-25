@@ -10,6 +10,7 @@ import de.jjco.EngineLog;
  * @since 1/18/2015
  */
 public abstract class Interval {
+	private EndCallback cb;
 	private long startTime;
 	private long duration;
 	private int type;
@@ -29,6 +30,15 @@ public abstract class Interval {
 		this.easeType = easeType;
 		this.type = type;
 		state = 0;
+	}
+	
+	/**
+	 * Sets the callback that is called when this interval is finished animating.
+	 * 
+	 * @param cb the callback
+	 */
+	public void setCallback(EndCallback cb) {
+		this.cb = cb;
 	}
 	
 	/**
@@ -99,6 +109,10 @@ public abstract class Interval {
 		double time = Math.min(Math.max(System.currentTimeMillis() - startTime, 0), duration);
 		if (animate(Tween.tween(type, easeType, time, duration))) {
 			state = 2;
+			
+			if (cb != null) {
+				cb.onFinish(this);
+			}
 		}
 	}
 	
