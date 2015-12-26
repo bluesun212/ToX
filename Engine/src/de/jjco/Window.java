@@ -702,6 +702,16 @@ public class Window implements Runnable {
 	}
 	
 	/**
+	 * Gets the current node acting as the scene node.  If the window
+	 * has no nodes, this will return null.
+	 * 
+	 * @return the scene node
+	 */
+	public CompNode getScene() {
+		return (current);
+	}
+	
+	/**
 	 * Returns the top clickable component under the specified coordinates.
 	 * 
 	 * @param p the position
