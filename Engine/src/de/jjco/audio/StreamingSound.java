@@ -148,6 +148,7 @@ public class StreamingSound extends Sound {
 		public void run() {
 			IntBuffer buffers = BufferUtils.createIntBuffer(1);
 			
+			// TODO: What is this?                vvvvvv
 			while ( (SoundSystem.isCreated() || isDestroyed()) && !stopped ) {
 				int status = AL10.alGetSourcei(source, AL10.AL_SOURCE_STATE);
 				if (status != AL10.AL_PAUSED) { //&& != AL10.AL_STOPPED

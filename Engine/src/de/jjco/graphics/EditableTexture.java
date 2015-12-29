@@ -34,7 +34,6 @@ public class EditableTexture extends Texture {
 	 * Binds this texture to the renderer.  All OpenGL calls will now go to the texture.
 	 */
 	public void bind() {
-		EngineLog.log("Binding " + this);
 		glDisable(GL_TEXTURE_2D);		
 		glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fbo);
 		
@@ -47,12 +46,21 @@ public class EditableTexture extends Texture {
 	 * Unbinds the texture.
 	 */
 	public void unbind() {
-		EngineLog.log("Unbinding " + this);
 		glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
 		
 		if ( old != null ) {
 			old.bind();
 		}
+	}
+	
+	public int read(int x, int y) {
+		ByteBuffer buffer = ByteBuffer.allocateDirect(4);
+		glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fbo);
+		glReadPixels(x, y, 1, 1, GL_RGBA, GL_BYTE, buffer);
+		glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
+		buffer.rewind();
+		
+		return buffer.getInt();
 	}
 
 	@Override
@@ -71,12 +79,12 @@ public class EditableTexture extends Texture {
 		glBindTexture(GL_TEXTURE_2D, textureID);
 		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_INT, (ByteBuffer) null);
-		glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT,GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D, textureID, 0);
+		glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D, textureID, 0);
 		glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0); 
 		
 		// Check if everything worked
 		int status = glCheckFramebufferStatusEXT(GL_FRAMEBUFFER_EXT);
-		if ( status == GL_FRAMEBUFFER_COMPLETE_EXT ) {
+		if (status == GL_FRAMEBUFFER_COMPLETE_EXT) {
 			EngineLog.log("Created " + this);
 		} else {
 			throw new IllegalStateException(this + "Could not be created because FBOs are not supported on this computer! (Error " + status + ")");

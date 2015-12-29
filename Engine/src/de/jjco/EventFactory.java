@@ -117,5 +117,15 @@ public class EventFactory {
 			parent = l;
 		}
 		
+		@Override
+		public String toString() {
+			String ret = parent.getClass().getSimpleName();
+			if (parent instanceof Class<?>) {
+				ret = ((Class<?>) parent).getSimpleName();
+			}
+			
+			ret += "." + func.getName();
+			return ret;
+		}
 	}
 }

@@ -175,6 +175,7 @@ public class SoundSystem {
 				length = (int) ais.getFrameLength();
 			}
 			length *= af.getSampleSizeInBits() / 8;
+			length *= af.getChannels();
 			
 			// Create buffers
 			int bufferSize = 8192;

@@ -97,6 +97,7 @@ public class StaticSound extends Sound {
 	protected void doLoad() {
 		try {
 			EngineLog.log("Loading static sound: " + resource);
+			
 			BufferedInputStream is = new BufferedInputStream(FileSystem.getInputStream(resource));
 			AudioInputStream ais = AudioSystem.getAudioInputStream(is);
 			AudioFormat af = ais.getFormat();
@@ -127,7 +128,9 @@ public class StaticSound extends Sound {
 			
 			if (!started) {
 				started = true;
-				new Thread(this).start();
+				Thread th = new Thread(this);
+				th.setDaemon(true);
+				th.start();
 			}
 		}
 		
