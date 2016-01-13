@@ -106,13 +106,17 @@ public class WindowHints {
 	 * @param val the value
 	 */
 	public void setHint(int hint, Object val) {
-		int realVal = (Integer) val;
-		if ((Boolean) val == false) {
-			realVal = GL11.GL_FALSE; 
-		} else if ((Boolean) val == true) {
-			realVal = GL11.GL_TRUE; 
+		int realVal = 0;
+		try {
+			realVal = (Integer) val;
+		} catch (ClassCastException e) {
+			if ((Boolean) val == false) {
+				realVal = GL11.GL_FALSE; 
+			} else if ((Boolean) val == true) {
+				realVal = GL11.GL_TRUE; 
+			}
 		}
-
+		
 		if (hints.containsKey(hint)) {
 			hints.remove(hint);
 		}

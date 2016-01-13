@@ -55,7 +55,7 @@ public class CollisionManager extends CompNode {
 				for (CollisionNode cs : getWindow().getNodesThatMatch(desc)) {
 					BoundingObject bb2 = cs.getBoundingObject();
 					
-					if (IntersectionManager.intersects(bb, bb2)) {
+					if (!bb2.equals(bb) && IntersectionManager.intersects(bb, bb2)) {
 						CompNode obj = cs.getHandler();
 						
 						if (obj != null && !ret.contains(obj)) {

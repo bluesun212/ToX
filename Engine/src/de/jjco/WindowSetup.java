@@ -70,7 +70,11 @@ public abstract class WindowSetup {
 			GL11.glRotated(sn.getAngle(), 0, 0, 1);
 			
 			if (sn instanceof DrawableNode) {
-				((DrawableNode) sn).draw();
+				synchronized (sn.getUnsafeLock()) {
+					if (sn.getParent() != null && sn.getWindow() != null) {
+						((DrawableNode) sn).draw();
+					}
+				}
 			}
 			
 			for (CompNode child : sn.getChildren()) {

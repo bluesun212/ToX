@@ -4,7 +4,11 @@ import java.awt.Color;
 import java.awt.FontFormatException;
 import java.awt.FontMetrics;
 import java.awt.Graphics2D;
+import java.awt.Rectangle;
 import java.awt.RenderingHints;
+import java.awt.font.GlyphVector;
+import java.awt.geom.AffineTransform;
+import java.awt.geom.Point2D;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferInt;
 import java.io.IOException;
@@ -25,26 +29,30 @@ import de.jjco.resources.GLResource;
  * @version Revision 1
  */
 public class Font extends GLResource {
+	private static char[] chrs = new char[256];
+	static {
+		for (int i = 0; i < chrs.length; i++) {
+			chrs[i] = (char) i;
+		}
+	}
+	
 	private int width;
 	private int height;
-
-	private double[] uCoords;
-	private double[] uWidths;
+	private int ha = -1;
+	private int va = -1;
+	private int[][] coords;
 	private int id;
-	
+
 	private java.awt.Font font;
 	private boolean antiAlias;
 	private ByteBuffer buffer;
-	
-	private int ha = -1;
-	private int va = -1;
-	
+
 	public static final int ALIGN_LEFT = -1;
 	public static final int ALIGN_CENTER = 0;
 	public static final int ALIGN_RIGHT = 1;
 	public static final int ALIGN_TOP = -1;
 	public static final int ALIGN_BOTTOM = 1;
-	
+
 	/**
 	 * Creates a font based on a pre-existing font.
 	 * 
@@ -57,7 +65,7 @@ public class Font extends GLResource {
 		java.awt.Font f = new java.awt.Font(name, 0, size);
 		return ( new Font(f, aa) );
 	}
-	
+
 	/**
 	 * Creates a Font based on a TrueType resource.
 	 * 
@@ -68,7 +76,7 @@ public class Font extends GLResource {
 	 */
 	public static Font loadFont(String resource, int size, boolean aa) {
 		InputStream is = FileSystem.getInputStream(resource);
-		
+
 		try {
 			java.awt.Font f = java.awt.Font.createFont(java.awt.Font.TRUETYPE_FONT, is);
 			f = f.deriveFont((float) size);
@@ -78,10 +86,10 @@ public class Font extends GLResource {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		
+
 		return ( null );
 	}
-	
+
 	/**
 	 * @return the horizontal alignment
 	 */
@@ -128,13 +136,13 @@ public class Font extends GLResource {
 		if (!isLoaded()) {
 			return ( 0 );
 		}
-		
+
 		double w = 0;
 
 		for (int i = 0; i < s.length(); i++) {
 			int c = s.charAt(i);
-			if( c <= 256 ) {
-				w += uWidths[c];
+			if(c <= 256) {
+				w += coords[c][6];
 			}
 		}
 
@@ -147,9 +155,9 @@ public class Font extends GLResource {
 	 * @return the font height
 	 */
 	public int getHeight() {
-		return ( height / 32 );
+		return ( height / 16 );
 	}
-	
+
 	/**
 	 * Draws text onto the screen.
 	 * 
@@ -161,40 +169,41 @@ public class Font extends GLResource {
 		if (!isLoaded() || s == null) {
 			return;
 		}
-		
+
 		int w = getWidth(s);
 		int h = getHeight();
+		y += h;
 		x -= w * (ha + 1) / 2;
 		y -= h * (va + 1) / 2;
-		
+
 		GL11.glPushMatrix();
 		GL11.glTranslated(x, y, 0);
 		GL11.glEnable(GL11.GL_TEXTURE_2D);
 		GL11.glBindTexture(GL11.GL_TEXTURE_2D, id);
 		GL11.glBegin(GL11.GL_QUADS);
-		
-		int pos = 0;
+
+		double pos = 0;
 		for ( int i = 0; i < s.length(); i++ ) {
 			int c = s.charAt(i);
 			if (c < 256) {
-				double ww = uWidths[c];
-				double hh = height / 32;
-				double uw = ww / width;
-				double vh = hh / height;
-				double u = uCoords[c];
-				double v = (c / 16) * (1. / 16);
+				double u1 = coords[c][0] / (double)width;
+				double v1 = coords[c][1] / (double)height;
+				double u2 = (coords[c][0] + coords[c][2]) / (double)width;
+				double v2 = (coords[c][1] + coords[c][3]) / (double)height;
+				double x1 = pos + coords[c][4];
+				double y1 = coords[c][5];
+				double x2 = x1 + coords[c][2];
+				double y2 = y1 + coords[c][3];
 
-				
-				
-				GL11.glTexCoord2d(u, v);
-				GL11.glVertex2d(pos, 0);
-				GL11.glTexCoord2d(u + uw, v);
-				GL11.glVertex2d(pos + ww, 0);
-				GL11.glTexCoord2d(u + uw, v + vh);
-				GL11.glVertex2d(pos + ww, hh);
-				GL11.glTexCoord2d(u, v + vh);
-				GL11.glVertex2d(pos, hh);
-				pos += ww;
+				GL11.glTexCoord2d(u1, v1);
+				GL11.glVertex2d(x1, y1);
+				GL11.glTexCoord2d(u2, v1);
+				GL11.glVertex2d(x2, y1);
+				GL11.glTexCoord2d(u2, v2);
+				GL11.glVertex2d(x2, y2);
+				GL11.glTexCoord2d(u1, v2);
+				GL11.glVertex2d(x1, y2);
+				pos += coords[c][6];
 			}
 		}
 
@@ -213,35 +222,57 @@ public class Font extends GLResource {
 
 		FontMetrics metrics = temp.getFontMetrics();
 		width = metrics.getMaxAdvance() * 16;
-		height = metrics.getHeight() * 32;
+		height = metrics.getHeight() * 16;
 		temp.dispose();
 
-		// Next, draw all the glyphs to another image and put data into the char array
+		// Create font image
 		BufferedImage page = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
-		Graphics2D g2d = (Graphics2D) page.getGraphics();
-		g2d.setColor(Color.white);
-		g2d.setFont(font);
+		Graphics2D gfx = (Graphics2D) page.getGraphics();
+		gfx.setColor(Color.WHITE);
+		gfx.setFont(font);
 
 		if (antiAlias) {
-			g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+			gfx.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 		}
-		
-		uCoords = new double[256];
-		uWidths = new double[256];
 
-		int x = 0;
-		for (int i = 0; i < 256; i++) {
-			if (i % 16 == 0) {
-				x = 0;
+		// Draw texture
+		coords = new int[256][];
+
+		GlyphVector glyphs = font.createGlyphVector(gfx.getFontRenderContext(), chrs);
+		int cmh = 0;
+		int cx = 0;
+		int cy = 0;
+
+		for (int i = 0; i < chrs.length; i++) {
+			// Calculate bounds
+			Rectangle bounds = glyphs.getGlyphPixelBounds(i, null, 0, 0);
+			Point2D origin = glyphs.getGlyphPosition(i);
+			bounds.translate(-(int)origin.getX(), -(int)origin.getY());
+
+			int cw = (int) bounds.getWidth();
+			int ch = (int) bounds.getHeight();
+			int cxo = (int) bounds.getX();
+			int cyo = (int) bounds.getY();
+			int lcw = (int) gfx.getFontMetrics().getStringBounds("" + chrs[i], gfx).getWidth();
+			if (ch > cmh) {
+				cmh = ch;
 			}
-			
-			int w = metrics.charWidth((char) i);
-			g2d.drawString("" + ((char) i), x, 
-					metrics.getMaxAscent() + 2 * metrics.getHeight() * (i / 16));
 
-			uCoords[i] = (double)x / width;
-			uWidths[i] = w;
-			x += w;
+			coords[i] = new int[]{cx, cy, cw, ch, cxo, cyo, lcw};
+
+			// Draw
+			AffineTransform id = gfx.getTransform();
+			gfx.translate(cx-cxo, cy-cyo);
+			gfx.drawString("" + chrs[i], 0, 0);
+			gfx.setTransform(id);
+
+			// Move
+			cx += cw + 2;
+			if (i != 0 && i % 16 == 0) {
+				cx = 0;
+				cy += cmh + 2;
+				cmh = 0;
+			}
 		}
 
 		// Finally, make the image into an openGL compatible texture
@@ -255,7 +286,7 @@ public class Font extends GLResource {
 			buffer.put((byte) ((data[i] >> 24) & 0xff));
 		}
 
-		g2d.dispose();
+		gfx.dispose();
 		buffer.rewind();
 	}
 
@@ -269,11 +300,11 @@ public class Font extends GLResource {
 		GL11.glBindTexture(GL11.GL_TEXTURE_2D, 0);
 		EngineLog.log("Loaded " + font.getFontName() + ":" + height + " into ID " + id);
 	}
-	
+
 	@Override
 	protected void doDestroyWithGL() {
 		GL11.glDeleteTextures(id);
 	}
-	
+
 	protected void doDestroy() {}
 }

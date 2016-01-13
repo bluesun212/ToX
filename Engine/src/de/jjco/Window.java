@@ -1037,7 +1037,11 @@ public class Window implements Runnable {
 	}
 	
 	private void stepNode(CompNode cn) {
-		cn.step();
+		synchronized (cn.getUnsafeLock()) {
+			if (cn.getParent() != null && cn.getWindow() != null) {
+				cn.step();
+			}
+		}
 		
 		for (CompNode child : cn.getChildren()) {
 			stepNode(child);

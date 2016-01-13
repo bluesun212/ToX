@@ -98,7 +98,7 @@ public class Sprite {
 	 * @param y the y coordinate
 	 * @param frame the frame
 	 */
-	public void draw(double x, double y, int frame) {
+	public void draw(int x, int y, int frame) {
 		if ( sprite.isLoaded() ) {
 			if ( width == 0 ) {
 				width = sprite.getWidth();
@@ -115,22 +115,22 @@ public class Sprite {
 				}
 			}
 			
-			float tx = (float) fx / sprite.getWidth();
-			float ty = (float) fy / sprite.getHeight();
-			float tw = (float) width / sprite.getWidth();
-			float th = (float) height / sprite.getHeight();
+			double tx = (double) fx / sprite.getWidth();
+			double ty = (double) fy / sprite.getHeight();
+			double tw = (double) width / sprite.getWidth();
+			double th = (double) height / sprite.getHeight();
 			
 			// TODO: Update this to use new openGL
 			GL11.glEnable(GL11.GL_TEXTURE_2D);
 			GL11.glBindTexture(GL11.GL_TEXTURE_2D, sprite.getID());
 			GL11.glBegin(GL11.GL_QUADS);
-			GL11.glTexCoord2f(tx, ty);
+			GL11.glTexCoord2d(tx, ty);
 			GL11.glVertex2d(x, y);
-			GL11.glTexCoord2f(tx + tw, ty);
+			GL11.glTexCoord2d(tx + tw, ty);
 			GL11.glVertex2d(x + width, y);
-			GL11.glTexCoord2f(tx + tw, ty + th);
+			GL11.glTexCoord2d(tx + tw, ty + th);
 			GL11.glVertex2d(x + width, y + height);
-			GL11.glTexCoord2f(tx, ty + th);
+			GL11.glTexCoord2d(tx, ty + th);
 			GL11.glVertex2d(x, y + height);
 			GL11.glEnd();
 			GL11.glBindTexture(GL11.GL_TEXTURE_2D, 0);

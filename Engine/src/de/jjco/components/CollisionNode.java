@@ -74,7 +74,7 @@ public class CollisionNode extends DrawableNode {
 	
 	/**
 	 * Gets the closest parent of this node that:
-	 * 1. is not a collision handler
+	 * 1. is not a collision manager
 	 * 2. is not a collision node
 	 * 
 	 * @return the collision handler
@@ -82,7 +82,7 @@ public class CollisionNode extends DrawableNode {
 	public CompNode getHandler() {
 		CompNode child = getParent();
 		
-		while (child != null && (child instanceof CollisionHandler ||
+		while (child != null && (child instanceof CollisionManager ||
 				child instanceof CollisionNode)) {
 			child = child.getParent();
 		}

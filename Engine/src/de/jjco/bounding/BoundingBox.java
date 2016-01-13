@@ -120,6 +120,7 @@ public class BoundingBox extends BoundingObject {
 	 */
 	public void setAnchorX(double x) {
 		anchor.setX(x);
+		updateBoundingBox();
 	}
 	
 	/**
@@ -127,6 +128,7 @@ public class BoundingBox extends BoundingObject {
 	 */
 	public void setAnchorY(double y) {
 		anchor.setY(y);
+		updateBoundingBox();
 	}
 	
 	/**
@@ -134,6 +136,7 @@ public class BoundingBox extends BoundingObject {
 	 */
 	public void setAnchor(Point p) {
 		anchor = p;
+		updateBoundingBox();
 	}
 	
 	/**

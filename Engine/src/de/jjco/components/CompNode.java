@@ -21,6 +21,8 @@ import org.lwjgl.system.glfw.GLFW;
  * @version Revision 1
  */
 public class CompNode {
+	private Object unsafe = new Object();
+	
 	private CompNode parent;
 	private Window wnd;
 	private CopyOnWriteArrayList<CompNode> children;
@@ -206,27 +208,31 @@ public class CompNode {
 	 * @param p the node's new parent
 	 */
 	public void reparentTo(CompNode p) {
-		if (parent != null) {
-			parent.children.remove(this);
+		synchronized (unsafe) {
+			if (parent != null) {
+				parent.children.remove(this);
+			}
+			
+			parent = p;
+			if (parent != null) {
+				parent.children.add(this);
+				updateWindow(parent.getWindow());
+			} else {
+				updateWindow(null);
+			}
+			
+			updateRenderingPosition();
+			onReparent();
 		}
-		
-		parent = p;
-		if (parent != null) {
-			parent.children.add(this);
-			updateWindow(parent.getWindow());
-		} else {
-			updateWindow(null);
-		}
-		
-		updateRenderingPosition();
-		onReparent();
 	}
 	
 	private void updateWindow(Window wnd2) {
-		wnd = wnd2;
-		
-		for (CompNode cn : children) {
-			cn.updateWindow(wnd2);
+		synchronized (unsafe) {
+			wnd = wnd2;
+	
+			for (CompNode cn : children) {
+				cn.updateWindow(wnd2);
+			}
 		}
 	}
 	
@@ -305,5 +311,15 @@ public class CompNode {
 		for (CompNode cn : children) {
 			cn.updateRenderingPosition();
 		}
+	}
+	
+	/**
+	 * Gets the lock that prevents this object from drawing/stepping while reparenting, 
+	 * or visa versa.
+	 * 
+	 * @return the lock
+	 */
+	public Object getUnsafeLock() {
+		return unsafe;
 	}
 }
