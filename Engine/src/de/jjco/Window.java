@@ -708,7 +708,12 @@ public class Window implements Runnable {
 	 * @return the scene node
 	 */
 	public CompNode getScene() {
-		return (current);
+		CompNode temp = null;
+		if (!current.getChildren().isEmpty()) {
+			temp = current.getChildren().get(0);
+		}
+		
+		return temp;
 	}
 	
 	/**
