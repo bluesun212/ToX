@@ -72,6 +72,7 @@ public class SoundSystem {
 	public static void destroy() {
 		created = false;
 		EngineLog.logGeneral("Destroying the sound system");
+		alc.getDevice().destroy();
 		alc.destroy();
 	}
 	
